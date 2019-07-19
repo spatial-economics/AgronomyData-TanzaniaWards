@@ -61,7 +61,7 @@ server <- function(input, output, session) {
     choices_district = TZA_level3@data[is.element(TZA_level3@data$NAME_1, 
                                                   input$region), 
                                        "NAME_2"]
-    selectInput("district", "Select a District", choices_district)
+    selectInput("district", "Select a District", choices_district, selected = choices_district[1 ])
   })
   
   # Display wards in selected district in a Table
@@ -74,22 +74,24 @@ server <- function(input, output, session) {
   )
   output$wards_tbl <- renderDT(wards_in_district()) # Render Dynamic table
   
+  
   # Show Selected Wards
   output$picked_rows <- renderPrint({
     print(input$wards_tbl_rows_selected)
   })
   
-  output$picked_wards <- renderLeaflet(TZA_level3_leaflet %>% 
-                                         addPolygons( layerId = 2,
-                                                      data = TZA_level3[input$wards_tbl_rows_selected,],
-                                                      color = "#444444",
-                                                      weight = 1,
-                                                      smoothFactor = 0.5,
-                                                      opacity = 1.0,
-                                                      fillOpacity = 0.5,
-                                                      fillColor = "yellow"
-                                         )
-  )
+  seleted_district <- eventReactive(input$zoom,
+                                    {district_extent <-
+                                        extent(TZA_level3[
+                                          is.element(TZA_level3@data$NAME_2,input$district), 
+                                          ])
+                                      TZA_level3_leaflet %>%
+                                        fitBounds(district_extent[1],
+                                                  district_extent[3],
+                                                  district_extent[2],
+                                                  district_extent[4])
+                                    })
+  output$picked_wards <- renderLeaflet(seleted_district())# Render Dynamic map
   
 }
 
