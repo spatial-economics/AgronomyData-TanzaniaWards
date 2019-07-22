@@ -16,13 +16,14 @@ TZA_level3 <- shapefile("./data/gadm36_TZA_3.shp")
 
 TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 4, maxZoom = 10)) %>% 
   setView(lng = 35, lat = -6, zoom = 5) %>% 
+  addTiles() %>% 
   addPolygons(layerId = 1,
               color = "#444444",
               weight = 1,
               smoothFactor = 0.5,
               opacity = 1.0, 
               fillOpacity = 0.5,
-              fillColor = "brown", #~colorQuantile("YlOrRd", NAME_2)(NAME_2),
+              #fillColor = "brown", #~colorQuantile("YlOrRd", NAME_2)(NAME_2),
               highlightOptions = highlightOptions(color = "white", 
                                                   weight = 2,
                                                   bringToFront = TRUE))
@@ -80,18 +81,34 @@ server <- function(input, output, session) {
     print(input$wards_tbl_rows_selected)
   })
   
-  seleted_district <- eventReactive(input$zoom,
-                                    {district_extent <-
-                                        extent(TZA_level3[
-                                          is.element(TZA_level3@data$NAME_2,input$district), 
-                                          ])
-                                      TZA_level3_leaflet %>%
-                                        fitBounds(district_extent[1],
-                                                  district_extent[3],
-                                                  district_extent[2],
-                                                  district_extent[4])
-                                    })
-  output$picked_wards <- renderLeaflet(seleted_district())# Render Dynamic map
+  selected_district <- eventReactive(
+    input$zoom,
+    {
+      # Get the Selected district extent
+      slctd_dscts <- TZA_level3[is.element(TZA_level3@data$NAME_2,input$district),]
+      district_extent <- extent(slctd_dscts)
+      # Create map object 
+      slctd_dscts_map <- TZA_level3_leaflet %>% 
+        addPolygons(data = slctd_dscts,
+                    layerId = 2,
+                    color = "#444444",
+                    weight = 1,
+                    smoothFactor = 0.5,
+                    opacity = 1.0, 
+                    fillOpacity = 0.5,
+                    fillColor = "orange", #~colorQuantile("YlOrRd", NAME_2)(NAME_2),
+                    highlightOptions = highlightOptions(color = "white", 
+                                                        weight = 2,
+                                                       bringToFront = TRUE)) 
+      # Plot the map focused on district with a Tanzania inset
+      slctd_dscts_map %>%
+        fitBounds(district_extent[1],
+                  district_extent[3],
+                  district_extent[2],
+                  district_extent[4]) %>% addMiniMap()
+      }
+    )
+  output$picked_wards <- renderLeaflet(selected_district())# Render Dynamic map
   
 }
 
