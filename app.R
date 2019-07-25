@@ -12,7 +12,7 @@ library(leaflet)
 
 # Data
 TZA_SoilPH <- raster("./data/PH.tif")
-TZA_level3 <- shapefile("./data/gadm36_TZA_3.shp")
+TZA_level3 <- shapefile("./data/TZA_level3_data.shp")
 
 TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 4, maxZoom = 10)) %>% 
   setView(lng = 35, lat = -6, zoom = 5) %>% 
@@ -23,7 +23,7 @@ TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 4, 
               smoothFactor = 0.5,
               opacity = 1.0, 
               fillOpacity = 0.5,
-              #fillColor = "brown", #~colorQuantile("YlOrRd", NAME_2)(NAME_2),
+              #fillColor = "brown", #~colorQuantile("YlOrRd", Disrict)(Disrict),
               highlightOptions = highlightOptions(color = "white", 
                                                   weight = 2,
                                                   bringToFront = TRUE))
@@ -36,7 +36,7 @@ ui <- dashboardPage(
   dashboardSidebar(disable = TRUE),
   dashboardBody(
     fluidRow( box(title = "Select Tanzania Wards",
-                  selectInput("region", "Select a Region", unique(TZA_level3@data$NAME_1)),
+                  selectInput("region", "Select a Region", unique(TZA_level3@data$Region)),
                   uiOutput("districtUI"),
                   actionButton("zoom", "Move to District")),
               box(title = "Selected Tanzania Wards",
@@ -59,15 +59,15 @@ server <- function(input, output, session) {
   
   # Dynamic Districts dropdown
   output$districtUI = renderUI({
-    choices_district = TZA_level3@data[is.element(TZA_level3@data$NAME_1, 
+    choices_district = TZA_level3@data[is.element(TZA_level3@data$Region, 
                                                   input$region), 
-                                       "NAME_2"]
-    selectInput("district", "Select a District", choices_district, selected = choices_district[1 ])
+                                       "Disrict"]
+    selectInput("district", "Select a District", choices_district, selected = choices_district[1])
   })
   
   # Display wards in selected district in a Table
   wards_in_district <- eventReactive(input$zoom, 
-                                     {TZA_level3@data[is.element(TZA_level3@data$NAME_2,
+                                     {TZA_level3@data[is.element(TZA_level3@data$Disrict,
                                                                  input$district
                                      ),
                                      ]
@@ -85,7 +85,7 @@ server <- function(input, output, session) {
     input$zoom,
     {
       # Get the Selected district extent
-      slctd_dscts <- TZA_level3[is.element(TZA_level3@data$NAME_2,input$district),]
+      slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
       district_extent <- extent(slctd_dscts)
       # Create map object 
       slctd_dscts_map <- TZA_level3_leaflet %>% 
@@ -96,7 +96,7 @@ server <- function(input, output, session) {
                     smoothFactor = 0.5,
                     opacity = 1.0, 
                     fillOpacity = 0.5,
-                    fillColor = "orange", #~colorQuantile("YlOrRd", NAME_2)(NAME_2),
+                    fillColor = "orange", #~colorQuantile("YlOrRd", Disrict)(Disrict),
                     highlightOptions = highlightOptions(color = "white", 
                                                         weight = 2,
                                                        bringToFront = TRUE)) 
