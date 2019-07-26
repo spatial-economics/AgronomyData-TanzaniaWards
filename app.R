@@ -21,8 +21,8 @@ TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 4, 
               color = "#444444",
               weight = 1,
               smoothFactor = 0.5,
-              opacity = 1.0, 
-              fillOpacity = 0.5,
+              opacity = 0.5, 
+              fillOpacity = 0.1,
               #fillColor = "brown", #~colorQuantile("YlOrRd", Disrict)(Disrict),
               highlightOptions = highlightOptions(color = "white", 
                                                   weight = 2,
@@ -87,6 +87,7 @@ server <- function(input, output, session) {
       # Get the Selected district extent
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
       district_extent <- extent(slctd_dscts)
+      distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
       # Create map object 
       slctd_dscts_map <- TZA_level3_leaflet %>% 
         addPolygons(data = slctd_dscts,
@@ -95,8 +96,8 @@ server <- function(input, output, session) {
                     weight = 1,
                     smoothFactor = 0.5,
                     opacity = 1.0, 
-                    fillOpacity = 0.5,
-                    fillColor = "orange", #~colorQuantile("YlOrRd", Disrict)(Disrict),
+                    fillOpacity = 0.2,
+                    fillColor = ~distWardsCol(Ward),
                     highlightOptions = highlightOptions(color = "white", 
                                                         weight = 2,
                                                        bringToFront = TRUE)) 
