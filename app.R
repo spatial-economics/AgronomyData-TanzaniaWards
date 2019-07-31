@@ -63,8 +63,9 @@ ui <- dashboardPage(
     fluidRow( 
       column = 6,
       # ui3:check serv3
-      box(title = "Information on Highligted Ward(s)",
-          verbatimTextOutput("picked_rows")
+      box(title = "Highligted Ward(s)",
+          #verbatimTextOutput("picked_rows")
+          DTOutput("picked_rows")
           ),
       # ui4:check serv4
       box(title = "Wards in Selected District",
@@ -100,9 +101,12 @@ server <- function(input, output, session) {
   
   # serv3: outputs to ui3 
   # Show more details on wards highligted in the table
-  output$picked_rows <- renderPrint({
+  output$picked_rows <- renderDT({
+    slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
+    slctd_dscts <- slctd_dscts[input$wards_tbl_rows_selected,]
+    #print(input$wards_tbl_rows_selected)
+    slctd_dscts@data
     
-    print(input$wards_tbl_rows_selected)
   })
 
   # serv4: outputs to ui4 
