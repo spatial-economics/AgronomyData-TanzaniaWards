@@ -11,6 +11,11 @@ library(rgdal)
 library(DT)
 library(leaflet)
 
+# Used to create North arrow
+library(maptools)
+library(cleangeo)
+library(devtools)
+
 #### DATA
 # Load PH raster and wards shapefile
 TZA_SoilPH <- raster("./data/PH.tif")
@@ -23,8 +28,8 @@ TZA_level3@data$Crp_Cv_ <- round(TZA_level3@data$Crp_Cv_, digits = 2)
 TZA_level3@data$PH <- round(TZA_level3@data$PH, digits = 2)
 names(TZA_level3) <- c("Region", "Disrict", "Ward", "AREA_sqkm", "Crop Cover_perc", "PH")
 # Create a map wiget
-TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 4, maxZoom = 10)) %>% 
-  setView(lng = 35, lat = -6, zoom = 5) %>% 
+TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 5.5, maxZoom = 10)) %>% 
+  setView(lng = 35, lat = -6, zoom = 7) %>% 
   addTiles() %>% 
   addPolygons(layerId = 1,
               color = "#444444",
@@ -119,6 +124,15 @@ server <- function(input, output, session) {
       district_extent <- extent(slctd_dscts)
       distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
       
+      # Create a north arrow
+      arrow1 <-  layout.north.arrow(type = 1) 
+      # shift the coordinates 
+      # shift = c(x,y) direction
+      Narrow1 <- maptools::elide(arrow1, shift = c(
+        district_extent[2],
+        district_extent[4]))
+      proj4string(Narrow1) <- proj4string(slctd_dscts)
+      
       # Add Selected districts to the map widget
       slctd_dscts_map <- TZA_level3_leaflet %>% 
         addPolygons(data = slctd_dscts,
@@ -141,8 +155,11 @@ server <- function(input, output, session) {
        # setMaxBounds( lng1 = 29.32717
        #                , lat1 = -11.74570
        #                , lng2 = 40.4451370
-       #                , lat2 = -0.9857875 )  %>%
-        addMiniMap()
+       #                , lat2 = -0.9857875 )  %>% 
+        addPolygons(data = Narrow1 ) %>%
+        addMiniMap() %>% addScaleBar(position = "bottomleft") %>% addGraticule(interval = 1, 
+                                                                               style = list(color = "brown", 
+                                                                                            weight = 1))
       }
     )
   # Render Dynamic map
