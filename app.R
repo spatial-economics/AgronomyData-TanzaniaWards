@@ -165,7 +165,7 @@ server <- function(input, output, session) {
        #                , lat1 = -11.74570
        #                , lng2 = 40.4451370
        #                , lat2 = -0.9857875 )  %>% 
-        addPolygons(data = Narrow1 ) %>%
+        #addPolygons(data = Narrow1 ) %>%
         addMiniMap() %>% addScaleBar(position = "bottomleft") %>% addGraticule(interval = 1, 
                                                                                style = list(color = "brown", 
                                                                                             weight = 1))
