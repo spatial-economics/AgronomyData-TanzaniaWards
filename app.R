@@ -12,9 +12,9 @@ library(DT)
 library(leaflet)
 
 # Used to create North arrow
-library(maptools)
-library(cleangeo)
-library(devtools)
+# library(maptools)
+# library(cleangeo)
+# library(devtools)
 
 #### DATA
 # Load PH raster and wards shapefile
@@ -133,11 +133,20 @@ server <- function(input, output, session) {
         district_extent[4]))
       proj4string(Narrow1) <- proj4string(slctd_dscts)
       
+      # Create list of popup labels
+      labels_list <- lapply(seq(nrow(slctd_dscts@data)), function(i) {
+        paste0( '<p>', "Ward: ", slctd_dscts@data[i, "Ward"], '</p><p>', 
+                "AREA (sqkm): ",slctd_dscts@data[i, "AREA_sqkm"], '</p><p>', 
+                "Crop Cover (%): ",slctd_dscts@data[i, "Crop Cover_perc"],'</p><p>', 
+                "PH: ",slctd_dscts@data[i, "PH"], '</p>' ) 
+      })
+      
       # Add Selected districts to the map widget
       slctd_dscts_map <- TZA_level3_leaflet %>% 
         addPolygons(data = slctd_dscts,
                     layerId = 2,
                     color = "#444444",
+                    label = lapply(labels_list, htmltools::HTML),
                     weight = 1,
                     smoothFactor = 0.5,
                     opacity = 1.0, 
