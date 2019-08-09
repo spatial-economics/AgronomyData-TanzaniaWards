@@ -70,7 +70,8 @@ ui <- dashboardPage(
       # ui3:check serv3
       box(title = "Highligted Ward(s)",
           #verbatimTextOutput("picked_rows")
-          DTOutput("picked_rows")
+          DTOutput("picked_rows"),
+          downloadLink('downloadData', 'Download')
           ),
       # ui4:check serv4
       box(title = "Wards in Selected District",
@@ -113,6 +114,16 @@ server <- function(input, output, session) {
     slctd_dscts@data
     
   })
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste('data-', Sys.Date(), '.csv', sep='')
+    },
+    content = function(con) {
+      slctd_dscts_data <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
+      slctd_dscts_data <- slctd_dscts_data[input$wards_tbl_rows_selected,]
+      write.csv(slctd_dscts_data@data, con)
+    }
+  )
 
   # serv4: outputs to ui4 
   # Select a district to focus on 
@@ -123,15 +134,6 @@ server <- function(input, output, session) {
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
       district_extent <- extent(slctd_dscts)
       distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
-      
-      # Create a north arrow
-      arrow1 <-  layout.north.arrow(type = 1) 
-      # shift the coordinates 
-      # shift = c(x,y) direction
-      Narrow1 <- maptools::elide(arrow1, shift = c(
-        district_extent[2],
-        district_extent[4]))
-      proj4string(Narrow1) <- proj4string(slctd_dscts)
       
       # Create list of popup labels
       labels_list <- lapply(seq(nrow(slctd_dscts@data)), function(i) {
@@ -160,12 +162,7 @@ server <- function(input, output, session) {
         fitBounds(district_extent[1],
                   district_extent[3],
                   district_extent[2],
-                  district_extent[4]) %>% 
-       # setMaxBounds( lng1 = 29.32717
-       #                , lat1 = -11.74570
-       #                , lng2 = 40.4451370
-       #                , lat2 = -0.9857875 )  %>% 
-        #addPolygons(data = Narrow1 ) %>%
+                  district_extent[4]) %>%
         addMiniMap() %>% addScaleBar(position = "bottomleft") %>% addGraticule(interval = 1, 
                                                                                style = list(color = "brown", 
                                                                                             weight = 1))
