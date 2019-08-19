@@ -71,7 +71,8 @@ ui <- dashboardPage(
       box(title = "Highligted Ward(s)",
           #verbatimTextOutput("picked_rows")
           DTOutput("picked_rows"),
-          downloadLink('downloadData', 'Download')
+          downloadLink('downloadCSV', 'Download CSV |')
+          # downloadLink('downloadSHP', '| Download shapefile')
           ),
       # ui4:check serv4
       box(title = "Wards in Selected District",
@@ -114,9 +115,13 @@ server <- function(input, output, session) {
     slctd_dscts@data
     
   })
-  output$downloadData <- downloadHandler(
+  output$downloadCSV <- downloadHandler(
     filename = function() {
-      paste('data-', Sys.Date(), '.csv', sep='')
+      paste0('TZA_SlctWardsPH_', 
+             gsub("-", "", Sys.Date(), fixed = TRUE), "_",
+             gsub(":", "", format(Sys.time(), "%H:%M:%S"), fixed = TRUE),
+             '.csv'
+            )
     },
     content = function(con) {
       slctd_dscts_data <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
@@ -124,6 +129,16 @@ server <- function(input, output, session) {
       write.csv(slctd_dscts_data@data, con)
     }
   )
+  # output$downloadSHP <- downloadHandler(
+  #   filename = function() {
+  #     paste('data-', Sys.Date(), '.shp', sep='')
+  #   },
+  #   content = function(con) {
+  #     slctd_dscts_data <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
+  #     slctd_dscts_data <- slctd_dscts_data[input$wards_tbl_rows_selected,]
+  #     shapefile(slctd_dscts_data, con)
+  #   }
+  # )
 
   # serv4: outputs to ui4 
   # Select a district to focus on 
