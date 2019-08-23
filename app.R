@@ -30,7 +30,7 @@ names(TZA_level3) <- c("Region", "Disrict", "Ward", "AREA_sqkm", "Crop Cover_per
 # Create a map wiget
 TZA_level3_leaflet <- leaflet(TZA_level3, options = leafletOptions(minZoom = 5.5, maxZoom = 10)) %>% 
   setView(lng = 35, lat = -6, zoom = 7) %>% 
-  addTiles() %>% 
+  # addTiles() %>% 
   addPolygons(layerId = 1,
               color = "#444444",
               weight = 1,
@@ -58,14 +58,14 @@ ui <- dashboardPage(
           uiOutput("districtUI"),
           actionButton("zoom", "Show Wards")
           ),
-      # ui2:check serv2
+      # ui4:check serv4
       box(title = "Selected Tanzania Wards",
           leafletOutput("picked_wards")
           )
     ),
     
     # Information on wards in selected district
-    fluidRow( 
+    fluidRow(
       column = 6,
       # ui3:check serv3
       box(title = "Highligted Ward(s)",
@@ -95,9 +95,9 @@ server <- function(input, output, session) {
     selectInput("district", "Select District", choices_district, selected = choices_district[1])
   })
   
-  # serv2: outputs to ui2 
+  # serv2: outputs to ui2
   # Display information on wards in the selected district in a Table
-  wards_in_district <- eventReactive(input$zoom, 
+  wards_in_district <- eventReactive(input$zoom,
                                      {TZA_level3@data[is.element(TZA_level3@data$Disrict,
                                                                  input$district
                                      ),
@@ -105,19 +105,19 @@ server <- function(input, output, session) {
                                      }
   )
   output$wards_tbl <- renderDT(wards_in_district()) # Render Dynamic table
-  
-  # serv3: outputs to ui3 
+
+  # serv3: outputs to ui3
   # Show more details on wards highligted in the table
   output$picked_rows <- renderDT({
     slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
     slctd_dscts <- slctd_dscts[input$wards_tbl_rows_selected,]
     #print(input$wards_tbl_rows_selected)
     slctd_dscts@data
-    
+
   })
   output$downloadCSV <- downloadHandler(
     filename = function() {
-      paste0('TZA_SlctWardsPH_', 
+      paste0('TZA_SlctWardsPH_',
              gsub("-", "", Sys.Date(), fixed = TRUE), "_",
              gsub(":", "", format(Sys.time(), "%H:%M:%S"), fixed = TRUE),
              '.csv'
@@ -129,19 +129,19 @@ server <- function(input, output, session) {
       write.csv(slctd_dscts_data@data, con)
     }
   )
-  # output$downloadSHP <- downloadHandler(
-  #   filename = function() {
-  #     paste('data-', Sys.Date(), '.shp', sep='')
-  #   },
-  #   content = function(con) {
-  #     slctd_dscts_data <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
-  #     slctd_dscts_data <- slctd_dscts_data[input$wards_tbl_rows_selected,]
-  #     shapefile(slctd_dscts_data, con)
-  #   }
-  # )
+  output$downloadSHP <- downloadHandler(
+    filename = function() {
+      paste('data-', Sys.Date(), '.shp', sep='')
+    },
+    content = function(con) {
+      slctd_dscts_data <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
+      slctd_dscts_data <- slctd_dscts_data[input$wards_tbl_rows_selected,]
+      shapefile(slctd_dscts_data, con)
+    }
+  )
 
-  # serv4: outputs to ui4 
-  # Select a district to focus on 
+  # serv4: outputs to ui4
+  # Select a district to focus on
   selected_district <- eventReactive(
     input$zoom,
     {
@@ -149,37 +149,38 @@ server <- function(input, output, session) {
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$Disrict,input$district),]
       district_extent <- extent(slctd_dscts)
       distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
-      
+
       # Create list of popup labels
       labels_list <- lapply(seq(nrow(slctd_dscts@data)), function(i) {
-        paste0( '<p>', "Ward: ", slctd_dscts@data[i, "Ward"], '</p><p>', 
-                "AREA (sqkm): ",slctd_dscts@data[i, "AREA_sqkm"], '</p><p>', 
-                "Crop Cover (%): ",slctd_dscts@data[i, "Crop Cover_perc"],'</p><p>', 
-                "PH: ",slctd_dscts@data[i, "PH"], '</p>' ) 
+        paste0( '<p>', "Ward: ", slctd_dscts@data[i, "Ward"], '</p><p>',
+                "AREA (sqkm): ",slctd_dscts@data[i, "AREA_sqkm"], '</p><p>',
+                "Crop Cover (%): ",slctd_dscts@data[i, "Crop Cover_perc"],'</p><p>',
+                "PH: ",slctd_dscts@data[i, "PH"], '</p>' )
       })
-      
+
       # Add Selected districts to the map widget
-      slctd_dscts_map <- TZA_level3_leaflet %>% 
+      slctd_dscts_map <- TZA_level3_leaflet %>%
         addPolygons(data = slctd_dscts,
                     layerId = 2,
                     color = "#444444",
                     label = lapply(labels_list, htmltools::HTML),
                     weight = 1,
                     smoothFactor = 0.5,
-                    opacity = 1.0, 
+                    opacity = 1.0,
                     fillOpacity = 0.2,
                     fillColor = ~distWardsCol(Ward),
-                    highlightOptions = highlightOptions(color = "white", 
+                    highlightOptions = highlightOptions(color = "white",
                                                         weight = 2,
-                                                       bringToFront = TRUE)) 
+                                                       bringToFront = TRUE))
       # Zoom to the selected district in a map
       slctd_dscts_map %>%
         fitBounds(district_extent[1],
                   district_extent[3],
                   district_extent[2],
                   district_extent[4]) %>%
-        addMiniMap() %>% addScaleBar(position = "bottomleft") %>% addGraticule(interval = 1, 
-                                                                               style = list(color = "brown", 
+        # addMiniMap() %>% 
+        addScaleBar(position = "bottomleft") %>% addGraticule(interval = 1,
+                                                                               style = list(color = "brown",
                                                                                             weight = 1))
       }
     )
