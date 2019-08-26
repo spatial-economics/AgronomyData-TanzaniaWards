@@ -145,7 +145,7 @@ server <- function(input, output, session) {
       
       # Add Selected districts to the map widget
       dist_bbox <- bbox(slctd_dscts)
-      district_outline <- sf::st_bbox(c(xmin = xx[1], xmax = xx[3], ymin = xx[2], ymax = xx[4]), 
+      district_outline <- sf::st_bbox(c(xmin = dist_bbox[1], xmax = dist_bbox[3], ymin = dist_bbox[2], ymax = dist_bbox[4]), 
                                   crs = sf::st_crs(slctd_dscts)) %>% sf::st_as_sfc()
       insetmap <- TZA_level1_tm + tm_text("NAME_1", size = 0.75) + tm_shape(slctd_dscts) + tm_fill(col = "red")  
       mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level1_tm + 
