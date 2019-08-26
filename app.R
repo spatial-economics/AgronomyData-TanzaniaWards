@@ -7,6 +7,7 @@ library(shinydashboard)
 
 library(raster)
 library(rgdal)
+library(sf)
 
 library(DT)
 library(tmap)
@@ -131,7 +132,7 @@ server <- function(input, output, session) {
     {
       # Get the Selected district extent
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$District,input$district),]
-      district_extent <- extent(slctd_dscts)
+      # district_extent <- extent(slctd_dscts)
       # distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
       
       # Create list of popup labels
@@ -144,8 +145,8 @@ server <- function(input, output, session) {
       
       # Add Selected districts to the map widget
       dist_bbox <- bbox(slctd_dscts)
-      district_outline <- st_bbox(c(xmin = xx[1], xmax = xx[3], ymin = xx[2], ymax = xx[4]), 
-                                  crs = st_crs(slctd_dscts)) %>% st_as_sfc()
+      district_outline <- sf::st_bbox(c(xmin = xx[1], xmax = xx[3], ymin = xx[2], ymax = xx[4]), 
+                                  crs = sf::st_crs(slctd_dscts)) %>% sf::st_as_sfc()
       insetmap <- TZA_level1_tm + tm_text("NAME_1", size = 0.75) + tm_shape(slctd_dscts) + tm_fill(col = "red")  
       mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level1_tm + 
                  tm_shape(slctd_dscts,) + tm_borders() + 
