@@ -84,9 +84,10 @@ server <- function(input, output, session) {
   # serv1: outputs to ui1
   # Create a Dynamic Districts dropdown
   output$districtUI = renderUI({
-    choices_district = TZA_level3@data[is.element(TZA_level3@data$Region, 
+    choices_district <- TZA_level3@data[is.element(TZA_level3@data$Region, 
                                                   input$region), 
                                        "District"]
+    choices_district <- choices_district[!grepl("Lake", choices_district)]
     selectInput("district", "Select District", choices_district, selected = choices_district[1])
   })
   
