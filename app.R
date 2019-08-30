@@ -7,25 +7,16 @@ library(shinydashboard)
 
 library(raster)
 library(rgdal)
-library(sf)
 
 library(DT)
 library(tmap)
 library(tmaptools)
-library(grid)
 library(leaflet)
 
-# Used to create North arrow
-# library(maptools)
-# library(cleangeo)
-# library(devtools)
 
 #### DATA
-# Load PH raster and wards shapefile
-TZA_SoilPH <- raster("./data/PH.tif")
-# TZA_level0 <- shapefile("./data/gadm36_TZA_0.shp")
-TZA_level1 <- shapefile("./data/gadm36_TZA_1.shp")
-# TZA_level2 <- shapefile("./data/gadm36_TZA_2.shp")
+# Load District and wards shapefile
+TZA_level2 <- shapefile("./data/gadm36_TZA_2.shp")
 TZA_level3 <- shapefile("./data/TZA_level3_data.shp")
 
 # Prepare the Data
@@ -36,7 +27,7 @@ TZA_level3@data$PH <- round(TZA_level3@data$PH, digits = 2)
 names(TZA_level3) <- c("Region", "District", "Ward", 
                        "AREA_sqkm", "Crop Cover_perc", "PH")
 # Create a map wiget
-TZA_level1_tm <-  tm_shape(TZA_level1) + 
+TZA_level2_tm <-  tm_shape(TZA_level2) + 
                   tm_borders() #+
                   # tm_shape(TZA_SoilPH) + 
                   # tm_raster("PH", palette = get_brewer_pal("YlGnBu", 
@@ -64,7 +55,8 @@ ui <- dashboardPage(
       ),
       # ui2:check serv2
       box(title = "Selected Tanzania Wards",
-          leafletOutput("picked_wards")
+          leafletOutput("picked_wards"),
+          tags$h6("NB: Click on a Ward for more information", style = "color: green")
       )
     ),
     
@@ -97,7 +89,7 @@ server <- function(input, output, session) {
                                                   input$region), 
                                        "District"]
     choices_district <- choices_district[!grepl("Lake", choices_district)]
-    selectInput("district", "Select District", choices_district, selected = choices_district[1])
+    selectInput("district", "Select District", choices_district)
   })
   
   # serv2: outputs to ui2 
@@ -116,7 +108,6 @@ server <- function(input, output, session) {
   output$picked_rows <- renderDT({
     slctd_dscts <- TZA_level3[is.element(TZA_level3@data$District,input$district),]
     slctd_dscts <- slctd_dscts[input$wards_tbl_rows_selected,]
-    #print(input$wards_tbl_rows_selected)
     slctd_dscts@data
     
   })
@@ -142,38 +133,22 @@ server <- function(input, output, session) {
     {
       # Get the Selected district extent
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$District,input$district),]
-      # district_extent <- extent(slctd_dscts)
-      # distWardsCol <- colorFactor(topo.colors(length(TZA_level3)), slctd_dscts@data$Ward)
       
-      # Create list of popup labels
-      labels_list <- lapply(seq(nrow(slctd_dscts@data)), function(i) {
-        paste0( '<p>', "Ward: ", slctd_dscts@data[i, "Ward"], '</p><p>', 
-                "AREA (sqkm): ",slctd_dscts@data[i, "AREA_sqkm"], '</p><p>', 
-                "Crop Cover (%): ",slctd_dscts@data[i, "Crop Cover_perc"],'</p><p>', 
-                "PH: ",slctd_dscts@data[i, "PH"], '</p>' ) 
-      })
-      
-      # Add Selected districts to the map widget
-      dist_bbox <- bbox(slctd_dscts)
-      district_outline <- sf::st_bbox(c(xmin = dist_bbox[1], xmax = dist_bbox[3], ymin = dist_bbox[2], ymax = dist_bbox[4]), 
-                                  crs = sf::st_crs(slctd_dscts)) %>% sf::st_as_sfc()
-      # insetmap <- TZA_level1_tm + tm_text("NAME_1", size = 0.75) + tm_shape(slctd_dscts) + tm_fill(col = "red")  
-      mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level1_tm + 
+      # Create map of selected districts
+      mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level2_tm + 
                  tm_shape(slctd_dscts,) + tm_borders() + 
                  tm_fill(col = "PH",
-                         popup.vars = c("Ward", "AREA_sqkm")
+                         popup.vars = c("Ward", "AREA_sqkm", "Crop Cover_perc", "PH")
                          ) +
-                  tm_text("Ward", size = 0.75) +
-                  # tm_compass(type = "8star", position = c("left", "top")) +
-                  tm_scale_bar(width = 0.5)
-       # tmap_mode("plot") 
-      # tmap_arrange(mainmap, insetmap)
-      tmap_leaflet(mainmap)
+                  tm_scale_bar(width = 0.5) 
+      tmap_leaflet(mainmap) %>% 
+        addMiniMap()
       
-    }
+    }, ignoreNULL = FALSE
   )
   # Render Dynamic map
   output$picked_wards <- renderLeaflet(selected_district())
+  
   
   
 }
