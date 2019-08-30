@@ -11,8 +11,9 @@ library(sf)
 
 library(DT)
 library(tmap)
+library(tmaptools)
 library(grid)
-#library(leaflet)
+library(leaflet)
 
 # Used to create North arrow
 # library(maptools)
@@ -21,10 +22,10 @@ library(grid)
 
 #### DATA
 # Load PH raster and wards shapefile
-#TZA_SoilPH <- raster("./data/PH.tif")
-TZA_level0 <- shapefile("./data/gadm36_TZA_0.shp")
+TZA_SoilPH <- raster("./data/PH.tif")
+# TZA_level0 <- shapefile("./data/gadm36_TZA_0.shp")
 TZA_level1 <- shapefile("./data/gadm36_TZA_1.shp")
-TZA_level2 <- shapefile("./data/gadm36_TZA_2.shp")
+# TZA_level2 <- shapefile("./data/gadm36_TZA_2.shp")
 TZA_level3 <- shapefile("./data/TZA_level3_data.shp")
 
 # Prepare the Data
@@ -32,9 +33,17 @@ TZA_level3 <- shapefile("./data/TZA_level3_data.shp")
 TZA_level3@data$AREA_sq <- round(TZA_level3@data$AREA_sq, digits = 2)
 TZA_level3@data$Crp_Cv_ <- round(TZA_level3@data$Crp_Cv_, digits = 2)
 TZA_level3@data$PH <- round(TZA_level3@data$PH, digits = 2)
-names(TZA_level3) <- c("Region", "District", "Ward", "AREA_sqkm", "Crop Cover_perc", "PH")
+names(TZA_level3) <- c("Region", "District", "Ward", 
+                       "AREA_sqkm", "Crop Cover_perc", "PH")
 # Create a map wiget
-TZA_level1_tm <- tm_shape(TZA_level1) + tm_borders() 
+TZA_level1_tm <-  tm_shape(TZA_level1) + 
+                  tm_borders() #+
+                  # tm_shape(TZA_SoilPH) + 
+                  # tm_raster("PH", palette = get_brewer_pal("YlGnBu", 
+                  #                                          n = 4, 
+                  #                                          contrast = c(0.09, 0.41)
+                  #                                          )
+                  #           ) 
 # + tm_text("Region") 
 
 
@@ -55,7 +64,7 @@ ui <- dashboardPage(
       ),
       # ui2:check serv2
       box(title = "Selected Tanzania Wards",
-          plotOutput("picked_wards")
+          leafletOutput("picked_wards")
       )
     ),
     
@@ -148,22 +157,23 @@ server <- function(input, output, session) {
       dist_bbox <- bbox(slctd_dscts)
       district_outline <- sf::st_bbox(c(xmin = dist_bbox[1], xmax = dist_bbox[3], ymin = dist_bbox[2], ymax = dist_bbox[4]), 
                                   crs = sf::st_crs(slctd_dscts)) %>% sf::st_as_sfc()
-      insetmap <- TZA_level1_tm + tm_text("NAME_1", size = 0.75) + tm_shape(slctd_dscts) + tm_fill(col = "red")  
+      # insetmap <- TZA_level1_tm + tm_text("NAME_1", size = 0.75) + tm_shape(slctd_dscts) + tm_fill(col = "red")  
       mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level1_tm + 
                  tm_shape(slctd_dscts,) + tm_borders() + 
                  tm_fill(col = "PH",
                          popup.vars = c("Ward", "AREA_sqkm")
                          ) +
                   tm_text("Ward", size = 0.75) +
-                  tm_compass(type = "8star", position = c("left", "top")) +
+                  # tm_compass(type = "8star", position = c("left", "top")) +
                   tm_scale_bar(width = 0.5)
        # tmap_mode("plot") 
-      tmap_arrange(mainmap, insetmap)
+      # tmap_arrange(mainmap, insetmap)
+      tmap_leaflet(mainmap)
       
     }
   )
   # Render Dynamic map
-  output$picked_wards <- renderPlot(selected_district())
+  output$picked_wards <- renderLeaflet(selected_district())
   
   
 }
