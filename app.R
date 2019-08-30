@@ -28,14 +28,7 @@ names(TZA_level3) <- c("Region", "District", "Ward",
                        "AREA_sqkm", "Crop Cover_perc", "PH")
 # Create a map wiget
 TZA_level2_tm <-  tm_shape(TZA_level2) + 
-                  tm_borders() #+
-                  # tm_shape(TZA_SoilPH) + 
-                  # tm_raster("PH", palette = get_brewer_pal("YlGnBu", 
-                  #                                          n = 4, 
-                  #                                          contrast = c(0.09, 0.41)
-                  #                                          )
-                  #           ) 
-# + tm_text("Region") 
+                  tm_borders() 
 
 
 ##### USER INTERFACE
@@ -97,10 +90,16 @@ server <- function(input, output, session) {
   wards_in_district <- eventReactive(input$zoom, 
                                      {TZA_level3@data[is.element(TZA_level3@data$District,
                                                                  input$district
-                                     ),
-                                     ]
-                                     }
-  )
+                                                                 ),
+                                                      ]
+                                       if(is.null(input$district)) {
+                                         TZA_level3@data[is.element(TZA_level3@data$District,
+                                                                    "Arusha"
+                                                                    ),
+                                                         ]
+                                         }
+                                       }, ignoreNULL = FALSE 
+                                     )
   output$wards_tbl <- renderDT(wards_in_district()) # Render Dynamic table
   
   # serv3: outputs to ui3 
@@ -131,8 +130,11 @@ server <- function(input, output, session) {
   selected_district <- eventReactive(
     input$zoom,
     {
-      # Get the Selected district extent
+     # Get the Selected district extent
       slctd_dscts <- TZA_level3[is.element(TZA_level3@data$District,input$district),]
+      if(is.null(input$district)) {
+        slctd_dscts <- TZA_level3[is.element(TZA_level3@data$District,"Arusha"),]
+        }
       
       # Create map of selected districts
       mainmap <- tm_shape(slctd_dscts) + tm_borders() + TZA_level2_tm + 
